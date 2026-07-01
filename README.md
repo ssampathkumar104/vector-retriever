@@ -46,7 +46,7 @@ python -m venv .venv
 # macOS / Linux
 source .venv/bin/activate
 # Windows (PowerShell)
-.\.venv\Scripts\Activate.ps1
+.\\.venv\\Scripts\\Activate.ps1
 
 pip install --upgrade pip
 pip install -r requirements.txt
@@ -74,25 +74,85 @@ jupyter notebook Vector_retriever.ipynb
 
 The notebook cells are annotated and demonstrate creating Document objects, creating embeddings, initializing an LLM client (ChatGroq), and running retrieval queries.
 
-## Notes & troubleshooting
+## Usage examples (copied from Vector_retriever.ipynb)
 
-- Notebook kernel: the notebook metadata specifies Python 3.10.9 — use a compatible interpreter or the virtual environment above.
-- One cell in the notebook imports `HuggingFaceEmbeddings` and shows a NameError related to `nn` not being defined. This typically indicates a missing or incompatible dependency in the sentence-transformers / transformers stack. If you see this error, ensure `sentence-transformers` is installed (requirements.txt lists it) and try upgrading related packages:
+Below are short, copy-pasteable snippets taken directly from the notebook to help you get started quickly.
+
+1) Load environment variables
+
+```python
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# optional: push env vars into os.environ for downstream libraries
+os.environ["HF_TOKEN"] = os.getenv("HF_TOKEN")
+os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
+```
+
+2) Create LangChain Document objects
+
+```python
+from langchain_core.documents import Document
+
+documents = [
+    Document(
+        page_content="Dogs are great companions, known for their loyalty and friendliness.",
+        metadata={"source": "mammal-pets-doc"},
+    ),
+    Document(
+        page_content="Cats are independent pets that often enjoy their own space.",
+        metadata={"source": "mammal-pets-doc"},
+    ),
+    Document(
+        page_content="Goldfish are popular pets for beginners, requiring relatively simple care.",
+        metadata={"source": "fish-pets-doc"},
+    ),
+    Document(
+        page_content="Parrots are intelligent birds capable of mimicking human speech.",
+        metadata={"source": "bird-pets-doc"},
+    ),
+    Document(
+        page_content="Rabbits are social animals that need plenty of space to hop around.",
+        metadata={"source": "mammal-pets-doc"},
+    ),
+]
+
+# inspect documents
+documents
+```
+
+3) Initialize a Groq LLM client (ChatGroq)
+
+```python
+from langchain_groq import ChatGroq
+
+llm = ChatGroq(groq_api_key=os.environ["GROQ_API_KEY"], model="Llama3-8b-8192")
+llm
+```
+
+4) Initialize HuggingFace-based embeddings
+
+```python
+from langchain_huggingface import HuggingFaceEmbeddings
+
+embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+```
+
+Notes from the notebook:
+- One of the notebook cells shows a NameError when importing/initializing HuggingFace embeddings; this often indicates a missing or incompatible backend (sentence-transformers/transformers/torch). If you encounter that error, try:
 
 ```bash
 pip install --upgrade sentence-transformers transformers torch
 ```
 
-- The notebook demonstrates using Groq and HuggingFace integrations; if you don't have API keys or access, you can still run the document/embedding/vector-store cells locally by using open, CPU-based Hugging Face embedding models (the repo already references `all-MiniLM-L6-v2` in the notebook as an example).
+- The notebook demonstrates the RAG pattern (Documents -> Embeddings -> Vector store -> Retriever -> LLM). Some of the examples assume external API access (Groq) — if you don't have those keys, you can still run the embedding and vector-store parts locally with open models.
 
-## Next steps you might try
+## Next steps
 
-- Convert the notebook into a small script or package that loads documents from disk and exposes a simple REST API for retrieval.
-- Swap Chromadb for another vector store (Weaviate, Pinecone, or a simple FAISS-based local store) and compare latency and accuracy.
-- Add automated tests that verify embedding + retrieval correctness for a small sample corpus.
+If you'd like, I can now:
+- Add runnable code showing how to load these Document objects into Chromadb and run a retrieval query, or
+- Extract the relevant notebook cells into a small script (retriever_example.py) that runs end-to-end on a local CPU embedding model.
 
 ---
-
-If you'd like, I can also:
-- Expand the README with usage examples copied directly from the notebook (code snippets), or
-- Open a small patch that converts the notebook into a runnable script with CLI flags.
